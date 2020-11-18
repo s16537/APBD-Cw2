@@ -1,4 +1,11 @@
-﻿using System;
+﻿using CsvHelper;
+using Cw2.models;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Xml.Serialization;
 
 namespace Cw2
 {
@@ -7,7 +14,7 @@ namespace Cw2
         static void Main(string[] args)
         {
             //program parameters initialized with default values 
-            string inputFile = "data.csv";
+            string inputFile = "dane.csv";
             string destPath = "result.xml";
             string format = "xml";
             foreach(string param in args)
@@ -40,11 +47,28 @@ namespace Cw2
                 }
             }
 
-            Console.WriteLine(inputFile);
-            Console.WriteLine(destPath);
-            Console.WriteLine(format);
+            //reading csv
+            using (var reader = new StreamReader(inputFile))
+            using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            {
+                Student student = new Student();
+                csv.Configuration.HasHeaderRecord = false;
+                csv.Configuration.RegisterClassMap<StudentMap>();
+                List<Student> records = csv.GetRecords<Student>().ToList();
+
+                Uczelnia uczelnia = new Uczelnia();
+                uczelnia.students = records;
+
+                //saving to XML
+                FileStream writer = new FileStream(destPath, FileMode.Create);
+                XmlSerializer xmlSerializer = new XmlSerializer(typeof(Uczelnia), new XmlRootAttribute("uczelnia"));
+                xmlSerializer.Serialize(writer, uczelnia);
+                writer.Close();
+            }
+
         
 
         }
+
     }
 }
